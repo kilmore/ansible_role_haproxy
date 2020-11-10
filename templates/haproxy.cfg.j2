@@ -1,0 +1,73 @@
+#---------------------------------------------------------------------
+# THIS FILE MANAGED VIA ANSIBLE, IT WILL BE OVER WRITTEN 
+# THE NEXT TIME ANSIBLE IS RUN
+#---------------------------------------------------------------------
+
+#---------------------------------------------------------------------
+# Global settings
+#---------------------------------------------------------------------
+global
+    log         127.0.0.1 local2
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000
+    user        {{ haproxy_user }}
+    group       {{ haproxy_group }}
+    daemon
+
+defaults
+    mode                    http
+    log                     global
+    option                  httplog
+    option                  dontlognull
+    option http-server-close
+    option forwardfor       except 127.0.0.0/8
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 10s
+    timeout check           10s
+    maxconn                 3000
+
+
+{% if enable_stats == true %}
+listen  stats
+        bind            :1936
+        mode            http
+        log             global
+        maxconn 10
+        clitimeout      100s
+        srvtimeout      100s
+        contimeout      100s
+        timeout queue   100s
+        stats enable
+        stats hide-version
+        stats refresh 30s
+        stats show-node
+        stats auth {{ stats_auth }}
+        stats uri  /haproxy?stats
+{% endif %}
+
+
+{% for service in services %}
+frontend {{ service.name }}
+  bind {{ service.frontend.bind}}
+  default_backend {{ service.name }}
+  mode {{ service.frontend.mode }}
+  option {{ service.frontend.option }}
+
+
+backend {{ service.name }}
+  balance {{ service.backend.balance }}
+  mode {{ service.backend.mode }}
+  {% for server in service.backend.servers %}
+  server {{ server.name }} {{ server.address }} check
+  {% endfor %}
+{% endfor %}
+
+
+
