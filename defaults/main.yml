@@ -1,0 +1,6 @@
+---
+haproxy_user: haproxy
+haproxy_group: haproxy
+enable_stats: true 
+stats_auth: "admin:password"    
+services: []

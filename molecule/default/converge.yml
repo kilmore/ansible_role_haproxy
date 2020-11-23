@@ -1,0 +1,38 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include haproxy"
+      include_role:
+        name: "haproxy"
+  vars:
+    enable_stats: true 
+    stats_auth: "admin:password"    
+
+    haproxy_user: haproxy
+    haproxy_group: haproxy
+
+    haproxy_backend_servers:
+      - name: app1
+        address: 192.168.0.1:80
+      - name: app2
+        address: 192.168.0.2:80
+    
+    services:
+      - name: internal_api
+        frontend:
+          bind: "*:6443"
+          mode: tcp
+          option: tcplog
+        backend:
+          balance: source
+          mode: tcp
+          servers:
+            - name: bootstrap 
+              address: 192.168.1.59:6443
+            - name: master0
+              address: 192.168.1.60:6443
+            - name: master1 
+              address: 192.168.1.51:6443
+            - name: master2
+              address: 192.168.1.62:6443       
